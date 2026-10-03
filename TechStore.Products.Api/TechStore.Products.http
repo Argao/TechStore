@@ -1,0 +1,19 @@
+@host = http://localhost:5254
+
+GET {{host}}/produtos
+Accept: application/json
+
+###
+
+POST {{host}}/produtos
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 0,
+  "nome": "Notebook",
+  "preco": 4999.90,
+  "estoque": 10
+}
+
+###

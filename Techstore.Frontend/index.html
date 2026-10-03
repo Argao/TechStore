@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechStore</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #232f3e;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            color: #ff9900;
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 25px;
+        }
+
+        th {
+            background-color: #232f3e;
+            color: white;
+            text-align: left;
+            padding: 12px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:hover {
+            background-color: #f2f2f2;
+        }
+
+        .status {
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .botao-excluir {
+            background-color: #d9534f;
+            color: white;
+            border: 0;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+
+        .botao-excluir:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>TechStore</h1>
+        <h2>Catálogo de Produtos</h2>
+
+        <h2>Cadastrar Produto</h2>
+        <form id="formProduto">
+            <label for="nome">Produto:</label>
+            <input type="text" id="nome" required>
+
+            <label for="preco">Preço:</label>
+            <input type="number" id="preco" step="0.01" required>
+
+            <label for="estoque">Estoque:</label> 
+            <input type="number" id="estoque" required> 
+
+            <button type="submit">Cadastrar</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Produto</th>
+                    <th>Preço</th>
+                    <th>Estoque</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+
+            <tbody id="tabela-produtos">
+                <tr>
+                    <td colspan="5">Carregando produtos...</td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+    <script>
+        const apiUrl = 'https://techstore-products-api-eadphrdwf8frgaga.westus3-01.azurewebsites.net';
+        const formProduto = document.getElementById('formProduto');
+        
+        formProduto.addEventListener('submit', async function (event) {
+            event.preventDefault();
+
+            const produto = {
+                nome: document.getElementById('nome').value,
+                preco: parseFloat(document.getElementById('preco').value),
+                estoque: parseInt(document.getElementById('estoque').value)
+            };
+
+            try {
+                const resposta = await fetch(`${apiUrl}/api/produtos`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(produto)
+                });
+
+                if (!resposta.ok) {
+                    throw new Error('Não foi possível cadastrar o produto.');
+                }
+
+                formProduto.reset();
+
+                await carregarProdutos();
+
+                alert('Produto cadastrado com sucesso!');
+            }
+            catch (erro) {
+                console.error(erro);
+                alert('Erro ao cadastrar produto.');
+            }
+        });
+        
+        async function carregarProdutos() {
+
+            const resposta = await fetch(`${apiUrl}/api/produtos`);
+            const produtos = await resposta.json();
+
+            const tabela =
+                document.getElementById('tabela-produtos');
+
+            tabela.innerHTML = '';
+
+            produtos.forEach(produto => {
+
+                const linha = document.createElement('tr');
+
+                linha.innerHTML = `
+                <td>${produto.id}</td>
+                <td>${produto.nome}</td>
+                <td>R$ ${Number(produto.preco).toFixed(2)}</td>
+                <td>${produto.estoque}</td>
+                <td>
+                    <button
+                        type="button"
+                        class="botao-excluir"
+                        data-id="${produto.id}">
+                        Excluir
+                    </button>
+                </td>
+                `;
+
+                tabela.appendChild(linha);
+            });
+        }
+
+        document.getElementById('tabela-produtos').addEventListener('click', async function (event) {
+            const botao = event.target.closest('.botao-excluir');
+
+            if (!botao) {
+                return;
+            }
+
+            const id = botao.dataset.id;
+            const nome = botao.closest('tr').cells[1].textContent;
+
+            if (!confirm(`Deseja excluir o produto "${nome}"?`)) {
+                return;
+            }
+
+            botao.disabled = true;
+
+            try {
+                const resposta = await fetch(`${apiUrl}/api/produtos/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (!resposta.ok) {
+                    throw new Error('Não foi possível excluir o produto.');
+                }
+
+                await carregarProdutos();
+                alert('Produto excluído com sucesso!');
+            }
+            catch (erro) {
+                console.error(erro);
+                botao.disabled = false;
+                alert('Erro ao excluir produto.');
+            }
+        });
+
+        carregarProdutos();
+        
+    </script>
+
+</body>
+
+</html>
